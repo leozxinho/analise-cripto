@@ -126,8 +126,12 @@ async def executar_varredura() -> None:
 async def loop_monitoramento() -> None:
     """Loop infinito executado em background pelo FastAPI lifespan."""
     logger.info("monitor_iniciado", intervalo_segundos=SCAN_INTERVAL_SECONDS)
+    await asyncio.sleep(5)  # aguarda o app subir completamente
     while True:
-        await executar_varredura()
+        try:
+            await executar_varredura()
+        except Exception as e:
+            logger.error("varredura_falhou_inesperadamente", erro=str(e))
         await asyncio.sleep(SCAN_INTERVAL_SECONDS)
 
 
