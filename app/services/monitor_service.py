@@ -129,3 +129,10 @@ async def loop_monitoramento() -> None:
     while True:
         await executar_varredura()
         await asyncio.sleep(SCAN_INTERVAL_SECONDS)
+
+
+async def loop_heartbeat() -> None:
+    """Envia mensagem no Telegram a cada 2 horas confirmando que o serviço está ativo."""
+    while True:
+        await asyncio.sleep(7_200)  # 2 horas
+        await enviar_mensagem("✅ *Memecoin Analyzer ativo*\nMonitorando novos tokens Solana.")

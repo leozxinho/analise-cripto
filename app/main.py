@@ -20,7 +20,7 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.logging_config import get_logger, setup_logging
-from app.services.monitor_service import loop_monitoramento
+from app.services.monitor_service import loop_monitoramento, loop_heartbeat
 from app.services.response_formatter import formatar_resposta_whatsapp
 from app.services.token_analyzer import analisar_token
 
@@ -34,12 +34,15 @@ limiter = Limiter(key_func=get_remote_address)
 async def lifespan(app: FastAPI):
     logger.info("aplicacao_iniciando", ambiente=settings.app_env)
     monitor_task = asyncio.create_task(loop_monitoramento())
+    heartbeat_task = asyncio.create_task(loop_heartbeat())
     yield
     monitor_task.cancel()
-    try:
-        await monitor_task
-    except asyncio.CancelledError:
-        pass
+    heartbeat_task.cancel()
+    for task in (monitor_task, heartbeat_task):
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     logger.info("aplicacao_encerrando")
 
 
