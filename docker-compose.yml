@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------
+  # API principal - Memecoin Analyzer
+  # ----------------------------------------------------------------
+  api:
+    build: .
+    container_name: memecoin-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - memecoin-net
+
+  # ----------------------------------------------------------------
+  # Cache
+  # ----------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: memecoin-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - redis_data:/data
+    networks:
+      - memecoin-net
+
+volumes:
+  redis_data:
+
+networks:
+  memecoin-net:
+    driver: bridge
