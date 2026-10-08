@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
 
     # Cache
-    redis_url: str = "redis://redis:6379/0"
     cache_ttl_seconds: int = 120
 
     # APIs externas
