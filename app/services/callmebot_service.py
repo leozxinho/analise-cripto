@@ -30,6 +30,9 @@ async def enviar_mensagem_whatsapp(numero: str, texto: str) -> bool:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(CALLMEBOT_URL, params=params)
             response.raise_for_status()
+            if "Paused" in response.text or "paused" in response.text:
+                logger.error("callmebot_conta_pausada", numero=numero)
+                return False
             logger.info("callmebot_enviado", numero=numero)
             return True
     except httpx.HTTPStatusError as e:

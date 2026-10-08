@@ -8,9 +8,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # WhatsApp (CallMeBot)
-    callmebot_api_key: str = ""
-    meu_whatsapp_numero: str = ""
+    # Telegram
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
 
     # Cache
     redis_url: str = "redis://redis:6379/0"

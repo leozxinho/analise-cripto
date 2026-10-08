@@ -15,7 +15,7 @@ from app.config import settings
 from app.logging_config import get_logger
 from app.models.schemas import Classificacao
 from app.services import dexscreener_service
-from app.services.callmebot_service import enviar_mensagem_whatsapp
+from app.services.telegram_service import enviar_mensagem
 from app.services.response_formatter import formatar_resposta_whatsapp
 from app.services.token_analyzer import analisar_token
 from app.utils.cache import get_redis
@@ -98,7 +98,7 @@ async def _processar_token(token_address: str) -> None:
         return
 
     mensagem = "🆕 *Novo token detectado na Solana!*\n\n" + formatar_resposta_whatsapp(analise)
-    await enviar_mensagem_whatsapp(settings.meu_whatsapp_numero, mensagem)
+    await enviar_mensagem(mensagem)
     await _marcar_notificado(token_address)
     logger.info(
         "token_notificado",
