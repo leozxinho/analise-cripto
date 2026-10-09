@@ -14,6 +14,7 @@ import asyncio
 from app.logging_config import get_logger
 from app.models.schemas import Classificacao
 from app.services import dexscreener_service
+from app.services.geckoterminal_service import buscar_novos_pools_solana, buscar_trending_solana
 from app.services.telegram_service import enviar_mensagem
 from app.services.response_formatter import formatar_resposta_whatsapp
 from app.services.token_analyzer import analisar_token
@@ -59,6 +60,38 @@ async def _buscar_boosted_solana() -> list[str]:
         and item.get("chainId") == "solana"
         and item.get("tokenAddress")
     ]
+
+
+async def _buscar_todos_candidatos() -> list[str]:
+    """Coleta tokens das três fontes em paralelo e retorna lista deduplicada."""
+    boosts, trending, novos = await asyncio.gather(
+        _buscar_boosted_solana(),
+        buscar_trending_solana(),
+        buscar_novos_pools_solana(),
+        return_exceptions=True,
+    )
+
+    vistos: set[str] = set()
+    candidatos: list[str] = []
+
+    for lista in (boosts, trending, novos):
+        if isinstance(lista, Exception):
+            logger.error("fonte_falhou", erro=str(lista))
+            continue
+        for addr in lista:
+            chave = addr.lower()
+            if chave not in vistos:
+                vistos.add(chave)
+                candidatos.append(addr)
+
+    logger.info(
+        "candidatos_coletados",
+        boosts=len(boosts) if not isinstance(boosts, Exception) else 0,
+        trending=len(trending) if not isinstance(trending, Exception) else 0,
+        novos=len(novos) if not isinstance(novos, Exception) else 0,
+        total_deduplicado=len(candidatos),
+    )
+    return candidatos
 
 
 async def _token_e_recente(token_address: str) -> bool:
@@ -108,8 +141,7 @@ async def _processar_token(token_address: str) -> None:
 
 async def executar_varredura() -> None:
     logger.info("varredura_iniciada")
-    tokens = await _buscar_boosted_solana()
-    logger.info("tokens_boosted_encontrados", total=len(tokens))
+    tokens = await _buscar_todos_candidatos()
 
     for token_address in tokens:
         try:
