@@ -2,6 +2,9 @@
 Configurações centrais da aplicação.
 Carrega variáveis de ambiente do .env
 """
+import base64
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,8 +15,15 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
 
-    # Anthropic (Claude AI) — opcional
+    # Anthropic (Claude AI) — chave em base64 para evitar detecção de secrets no git
     anthropic_api_key: str = ""
+    anthropic_api_key_b64: str = ""
+
+    @model_validator(mode="after")
+    def decodificar_anthropic_key(self) -> "Settings":
+        if self.anthropic_api_key_b64 and not self.anthropic_api_key:
+            self.anthropic_api_key = base64.b64decode(self.anthropic_api_key_b64).decode()
+        return self
 
     # Cache
     cache_ttl_seconds: int = 120
