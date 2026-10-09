@@ -28,6 +28,7 @@ from app.services.recommendation_engine import (
     gerar_recomendacao,
 )
 from app.services.score_engine import calcular_score_geral, classificar
+from app.services.ai_analyst_service import gerar_analise_ia
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -101,6 +102,24 @@ async def analisar_token(query: str) -> AnaliseCompleta:
     recomendacao = gerar_recomendacao(classificacao, score)
     nivel_risco = determinar_nivel_risco(classificacao)
 
+    # 6. Análise IA opcional (Claude Haiku) — só se API key configurada
+    analise_ia = await gerar_analise_ia(AnaliseCompleta(
+        query_original=query,
+        nome=mercado.nome,
+        simbolo=mercado.simbolo,
+        rede=mercado.rede,
+        contrato=contrato_real,
+        mercado=mercado,
+        seguranca=resultado_seguranca,
+        comunidade=resultado_comunidade,
+        disponibilidade=DisponibilidadeCompra(),
+        score=score,
+        classificacao=classificacao,
+        parecer=parecer,
+        recomendacao=recomendacao,
+        nivel_risco=nivel_risco,
+    ))
+
     logger.info(
         "analise_concluida",
         query=query,
@@ -124,6 +143,7 @@ async def analisar_token(query: str) -> AnaliseCompleta:
         parecer=parecer,
         recomendacao=recomendacao,
         nivel_risco=nivel_risco,
+        analise_ia=analise_ia,
         erros=erros,
     )
 

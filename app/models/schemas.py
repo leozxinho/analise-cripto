@@ -119,5 +119,6 @@ class AnaliseCompleta(BaseModel):
     parecer: str
     recomendacao: str
     nivel_risco: str
+    analise_ia: Optional[str] = None
 
     erros: list[str] = Field(default_factory=list)

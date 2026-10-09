@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
 
+    # Anthropic (Claude AI) — opcional
+    anthropic_api_key: str = ""
+
     # Cache
     cache_ttl_seconds: int = 120
 

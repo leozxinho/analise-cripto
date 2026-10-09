@@ -112,6 +112,9 @@ def formatar_resposta_whatsapp(analise: AnaliseCompleta) -> str:
 
     linhas.append(f"*Risco*\n{analise.nivel_risco}")
 
+    if analise.analise_ia:
+        linhas.append(f"\n*🤖 Análise IA*\n{analise.analise_ia}")
+
     if analise.erros:
         linhas.append(f"\n_Observação: {'; '.join(analise.erros)}_")
 
