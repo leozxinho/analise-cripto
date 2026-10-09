@@ -32,7 +32,12 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("aplicacao_iniciando", ambiente=settings.app_env)
+    logger.info(
+        "aplicacao_iniciando",
+        ambiente=settings.app_env,
+        claude_ai=bool(settings.anthropic_api_key),
+        telegram=bool(settings.telegram_bot_token),
+    )
     monitor_task = asyncio.create_task(loop_monitoramento())
     heartbeat_task = asyncio.create_task(loop_heartbeat())
     yield
