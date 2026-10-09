@@ -69,11 +69,17 @@ async def analisar_token(query: str) -> AnaliseCompleta:
     contrato_real = contrato or query
 
     # 2. Consultar segurança e comunidade EM PARALELO (mais rápido)
-    resultado_seguranca, resultado_comunidade = await asyncio.gather(
-        _consultar_seguranca_seguro(contrato_real, mercado.rede),
-        _consultar_comunidade_seguro(contrato_real, mercado.rede),
-        return_exceptions=False,
-    )
+    # CoinGecko leva dias para indexar tokens novos — pular se < 1 dia para evitar rate limit
+    token_e_novo = mercado.idade_dias is not None and mercado.idade_dias < 1
+    if token_e_novo:
+        resultado_seguranca = await _consultar_seguranca_seguro(contrato_real, mercado.rede)
+        resultado_comunidade = DadosComunidade()
+    else:
+        resultado_seguranca, resultado_comunidade = await asyncio.gather(
+            _consultar_seguranca_seguro(contrato_real, mercado.rede),
+            _consultar_comunidade_seguro(contrato_real, mercado.rede),
+            return_exceptions=False,
+        )
 
     # Se CoinGecko não indexou o token ainda, usa links sociais do DEX Screener
     if not resultado_comunidade.twitter_url and (mercado.twitter_url or mercado.telegram_url or mercado.site_oficial):
