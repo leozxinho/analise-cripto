@@ -32,7 +32,7 @@ async def buscar_trending_solana() -> list[str]:
     try:
         data = await get_json(url, headers=HEADERS, fonte="geckoterminal_trending")
     except APIClientError as e:
-        logger.error("geckoterminal_trending_falhou", erro=e.mensagem)
+        logger.warning("geckoterminal_trending_falhou", erro=e.mensagem)
         return []
 
     enderecos = _extrair_enderecos(data or {})
@@ -46,7 +46,7 @@ async def buscar_novos_pools_solana() -> list[str]:
     try:
         data = await get_json(url, headers=HEADERS, fonte="geckoterminal_new")
     except APIClientError as e:
-        logger.error("geckoterminal_new_pools_falhou", erro=e.mensagem)
+        logger.warning("geckoterminal_new_pools_falhou", erro=e.mensagem)
         return []
 
     enderecos = _extrair_enderecos(data or {})

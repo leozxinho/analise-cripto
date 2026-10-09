@@ -18,8 +18,6 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-import os
-
 from app.config import settings
 from app.logging_config import get_logger, setup_logging
 from app.services.monitor_service import loop_monitoramento, loop_heartbeat
@@ -39,8 +37,6 @@ async def lifespan(app: FastAPI):
         ambiente=settings.app_env,
         claude_ai=bool(settings.anthropic_api_key),
         telegram=bool(settings.telegram_bot_token),
-        os_telegram=bool(os.environ.get("TELEGRAM_BOT_TOKEN")),
-        os_claude=bool(os.environ.get("ANTHROPIC_API_KEY")),
     )
     monitor_task = asyncio.create_task(loop_monitoramento())
     heartbeat_task = asyncio.create_task(loop_heartbeat())
