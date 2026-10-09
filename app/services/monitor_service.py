@@ -131,7 +131,7 @@ async def _processar_token(token_address: str) -> None:
     await enviar_mensagem(mensagem)
 
     if analise.contrato:
-        await enviar_mensagem(f"📋 *Contrato:*\n`{analise.contrato}`")
+        await enviar_mensagem(f"{analise.contrato}")
 
     _marcar_notificado(token_address)
     logger.info(
