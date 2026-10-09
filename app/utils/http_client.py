@@ -56,10 +56,12 @@ async def get_json(
             response.raise_for_status()
             return response.json()
 
+    except APIClientError:
+        raise  # já tratado acima, não re-logar
     except httpx.HTTPStatusError as e:
         logger.error("erro_http", fonte=fonte, status=e.response.status_code, url=url)
         raise APIClientError(fonte, f"HTTP {e.response.status_code}") from e
-    except httpx.TimeoutException as e:
+    except httpx.TimeoutException:
         logger.error("timeout", fonte=fonte, url=url)
         raise
     except Exception as e:

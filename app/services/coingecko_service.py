@@ -48,6 +48,8 @@ async def buscar_dados_comunidade(endereco_contrato: str, rede: str) -> DadosCom
         return DadosComunidade()
 
     if not data:
+        # Cacheia miss por 30 min — tokens novos raramente entram no CoinGecko rápido
+        await cache_set(chave, DadosComunidade().model_dump(), ttl=1800)
         return DadosComunidade()
 
     links = data.get("links", {}) or {}
@@ -74,7 +76,7 @@ async def buscar_dados_comunidade(endereco_contrato: str, rede: str) -> DadosCom
         score_comunidade=score,
     )
 
-    await cache_set(chave, resultado.model_dump(), ttl=600)  # comunidade muda devagar, cache maior
+    await cache_set(chave, resultado.model_dump(), ttl=3600)  # comunidade muda muito devagar
     return resultado
 
 
