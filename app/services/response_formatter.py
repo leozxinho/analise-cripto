@@ -65,14 +65,22 @@ def formatar_resposta_whatsapp(analise: AnaliseCompleta) -> str:
     if s.total_holders is not None:
         linhas.append(f"*Holders:*\n{s.total_holders:,}\n".replace(",", "."))
 
-    linhas.append(f"*Contrato:*\n{_fmt_bool(s.contrato_verificado)}\n")
+    if analise.contrato:
+        linhas.append(f"*Contrato:*\n`{analise.contrato}`\n")
+    if s.contrato_verificado is not None:
+        linhas.append(f"*Verificado:*\n{_fmt_bool(s.contrato_verificado)}\n")
 
     if s.liquidez_travada_pct is not None:
         travada = s.liquidez_travada_pct >= 50
         emoji = "✅" if travada else "⚠️"
         linhas.append(f"*Liquidez Travada:*\n{emoji} {s.liquidez_travada_pct:.0f}%\n")
 
-    linhas.append(f"*Honeypot:*\n{_fmt_bool(s.eh_honeypot, invertido=True)}\n")
+    if s.eh_honeypot is not None:
+        linhas.append(f"*Honeypot:*\n{_fmt_bool(s.eh_honeypot, invertido=True)}\n")
+    elif s.dados_disponiveis:
+        linhas.append("*Honeypot:*\n⚠️ Não indexado ainda (token muito novo)\n")
+    else:
+        linhas.append("*Honeypot:*\n❓ Dados indisponíveis nesta rede\n")
 
     rug_risco = (
         s.eh_honeypot is True
