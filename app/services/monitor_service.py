@@ -129,6 +129,10 @@ async def _processar_token(token_address: str) -> None:
 
     mensagem = "🆕 *Novo token detectado na Solana!*\n\n" + formatar_resposta_whatsapp(analise)
     await enviar_mensagem(mensagem)
+
+    if analise.contrato:
+        await enviar_mensagem(f"📋 *Contrato:*\n`{analise.contrato}`")
+
     _marcar_notificado(token_address)
     logger.info(
         "token_notificado",

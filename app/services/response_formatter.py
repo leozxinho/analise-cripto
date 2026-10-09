@@ -65,8 +65,6 @@ def formatar_resposta_whatsapp(analise: AnaliseCompleta) -> str:
     if s.total_holders is not None:
         linhas.append(f"*Holders:*\n{s.total_holders:,}\n".replace(",", "."))
 
-    if analise.contrato:
-        linhas.append(f"*Contrato:*\n`{analise.contrato}`\n")
     if s.contrato_verificado is not None:
         linhas.append(f"*Verificado:*\n{_fmt_bool(s.contrato_verificado)}\n")
 
@@ -113,7 +111,9 @@ def formatar_resposta_whatsapp(analise: AnaliseCompleta) -> str:
     linhas.append(f"*Risco*\n{analise.nivel_risco}")
 
     if analise.analise_ia:
-        linhas.append(f"\n*🤖 Análise IA*\n{analise.analise_ia}")
+        linhas.append(f"\n*🤖 Análise Claude AI*\n{analise.analise_ia}")
+    else:
+        linhas.append("\n_Análise Claude AI: não disponível (chave não configurada)_")
 
     if analise.erros:
         linhas.append(f"\n_Observação: {'; '.join(analise.erros)}_")
