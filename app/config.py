@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Anthropic (Claude AI) — chave em base64 para evitar detecção de secrets no git
     anthropic_api_key: str = ""
     anthropic_api_key_b64: str = ""
+    anthropic_workspace_id: str = ""
 
     @model_validator(mode="after")
     def decodificar_anthropic_key(self) -> "Settings":

@@ -26,7 +26,13 @@ SYSTEM_PROMPT = (
 def _get_client() -> AsyncAnthropic:
     global _client
     if _client is None:
-        _client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        headers = {}
+        if settings.anthropic_workspace_id:
+            headers["anthropic-workspace-id"] = settings.anthropic_workspace_id
+        _client = AsyncAnthropic(
+            api_key=settings.anthropic_api_key,
+            default_headers=headers or None,
+        )
     return _client
 
 
