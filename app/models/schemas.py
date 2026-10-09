@@ -51,6 +51,9 @@ class DadosMercado(BaseModel):
     nome: Optional[str] = None
     simbolo: Optional[str] = None
     url_dexscreener: Optional[str] = None
+    twitter_url: Optional[str] = None
+    telegram_url: Optional[str] = None
+    site_oficial: Optional[str] = None
 
 
 class DadosSeguranca(BaseModel):

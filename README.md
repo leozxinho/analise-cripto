@@ -1,115 +1,132 @@
-# Memecoin Analyzer 🚀
+# Memecoin Analyzer
 
-API REST que analisa memecoins/altcoins automaticamente e envia o resultado pelo WhatsApp.
+Monitor automático de novos tokens Solana. A cada 5 minutos busca tokens boosted/trending no DEX Screener, analisa os que foram listados nos últimos 15 minutos e envia um alerta no **Telegram** quando encontra algo que passa nos filtros de qualidade.
 
-**100% gratuito** — usa apenas APIs públicas com camada gratuita (DEX Screener, GoPlus Security, CoinGecko) e Evolution API (open-source) para o WhatsApp.
+**100% gratuito** — DEX Screener, GoPlus Security e CoinGecko (APIs públicas) + Telegram Bot API.
 
-**Sem IA** — todo o score e recomendação são gerados por regras determinísticas, auditáveis e ajustáveis em `app/services/score_engine.py` e `app/services/recommendation_engine.py`.
+**Sem IA** — score e recomendações gerados por regras determinísticas, auditáveis em `app/services/score_engine.py`.
 
 ---
 
 ## Como funciona
 
 ```
-WhatsApp → Evolution API → Webhook (FastAPI) → Token Analyzer
-                                                      ↓
-                          ┌───────────────┬───────────┴────────────┬──────────────┐
-                          ↓               ↓                        ↓              ↓
-                    DEX Screener     GoPlus Security          CoinGecko    Trust Wallet List
-                    (mercado)        (segurança/honeypot)     (comunidade)  (disponibilidade)
-                          ↓               ↓                        ↓              ↓
-                          └───────────────┴───────────┬────────────┴──────────────┘
-                                                        ↓
-                                                  Score Engine
-                                              (regras, 0-100, 5 categorias)
-                                                        ↓
-                                            Recommendation Engine
-                                          (parecer + recomendação textual)
-                                                        ↓
-                                             Response Formatter
-                                                        ↓
-                                            Evolution API → WhatsApp
+A cada 5 minutos:
+  DEX Screener (boosted tokens)
+         ↓
+  Filtra: Solana + listado há menos de 15 min
+         ↓
+  Para cada token novo:
+    ┌────────────┬──────────────┬────────────────┐
+    ↓            ↓              ↓                ↓
+DEX Screener  GoPlus        CoinGecko      Trust Wallet
+ (mercado)   (segurança)   (comunidade)  (disponibilidade)
+    └────────────┴──────────────┴────────────────┘
+                          ↓
+                    Score Engine
+                 (0-100, 5 categorias)
+                          ↓
+              Filtros: score ≥ 35, liquidez ≥ $5k,
+                       não é golpe/não recomendado
+                          ↓
+               Notificação no Telegram
 ```
 
 ---
 
-## Pré-requisitos
+## Configuração rápida
 
-- Docker e Docker Compose instalados ([guia oficial](https://docs.docker.com/get-docker/))
-- Um número de WhatsApp dedicado para o bot (recomendado usar um chip separado do seu pessoal, mas pode usar o mesmo)
-- ~10 minutos
+### 1. Criar o bot do Telegram
 
----
+1. Abra o Telegram e mande `/newbot` para **@BotFather**
+2. Escolha um nome e username para o bot
+3. Guarde o **token** gerado (ex: `1234567890:AAF...`)
+4. Mande qualquer mensagem para o seu novo bot para ativá-lo
+5. Descubra seu **chat_id** mandando `/start` para **@userinfobot**
 
-## Passo a passo de instalação
-
-### 1. Clonar/copiar o projeto
-
-Copie todos os arquivos para uma pasta no seu servidor ou computador.
-
-### 2. Configurar variáveis de ambiente
+### 2. Configurar o `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Edite o `.env` e ajuste pelo menos:
+Edite o `.env`:
 
 ```env
-EVOLUTION_API_KEY=escolha-uma-senha-forte-aqui
-MEU_WHATSAPP_NUMERO=5514997780712
-POSTGRES_PASSWORD=escolha-outra-senha-forte
+TELEGRAM_BOT_TOKEN = seu-token-aqui
+TELEGRAM_CHAT_ID   = seu-chat-id-aqui
 ```
 
-> 💡 `MEU_WHATSAPP_NUMERO` é o número que vai **enviar** as mensagens para o bot analisar (seu número pessoal). O bot só responde para esse número por segurança — você pode remover essa checagem em `app/modules/whatsapp_webhook.py` se quiser que ele responda a qualquer um.
+As demais variáveis já têm valores padrão funcionais.
 
-### 3. Subir os containers
+### 3. Rodar localmente
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Ou com Docker:
 
 ```bash
 docker compose up -d --build
 ```
 
-Isso vai subir 4 serviços:
-- `api` — a aplicação FastAPI (porta 8000)
-- `postgres` — banco de dados
-- `redis` — cache
-- `evolution-api` — gateway do WhatsApp (porta 8080)
-
-### 4. Conectar o WhatsApp
-
-1. Acesse `http://localhost:8080/manager` (ou `http://SEU_IP:8080/manager` se estiver em VPS)
-2. Faça login usando a `EVOLUTION_API_KEY` que você definiu no `.env`
-3. Crie uma instância chamada `memecoin-bot` (mesmo nome do `EVOLUTION_INSTANCE_NAME`)
-4. Escaneie o QR Code com o WhatsApp que vai rodar o bot (Configurações → Aparelhos conectados → Conectar)
-5. Pronto! O WhatsApp está conectado.
-
-### 5. Testar
-
-No WhatsApp configurado como `MEU_WHATSAPP_NUMERO`, envie para o número do bot:
-
-```
-PEPE
-```
-
-ou
-
-```
-0x6982508145454ce325ddbe47a25d4ec3d2311933
-```
-
-Em alguns segundos você recebe a análise completa formatada.
+Ao iniciar, o app envia uma mensagem de confirmação no Telegram e começa a monitorar.
 
 ---
 
-## Testar sem WhatsApp (via navegador/Swagger)
+## Deploy no Railway (gratuito)
 
-Enquanto configura o WhatsApp, você pode testar a análise diretamente:
+1. Suba o projeto no GitHub
+2. Acesse [railway.app](https://railway.app) → **New Project → Deploy from GitHub**
+3. Selecione o repositório
+4. Em **Variables**, confirme que `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` estão definidos
+5. Railway detecta o `Dockerfile` e faz o deploy automaticamente
 
-```bash
-curl http://localhost:8000/analisar/PEPE
-```
+> O `.env` já é copiado para o container durante o build, então as variáveis são lidas diretamente dele.
 
-Ou abra a documentação interativa: `http://localhost:8000/docs`
+---
+
+## Filtros de qualidade
+
+Tokens são descartados silenciosamente se:
+
+| Critério | Valor |
+|---|---|
+| Idade | Mais de 15 minutos desde a listagem |
+| Classificação | Possível golpe ou Não recomendada |
+| Score mínimo | Abaixo de 35/100 |
+| Liquidez mínima | Abaixo de US$ 5.000 |
+
+Tokens que passam em todos os critérios geram uma notificação no Telegram.
+
+---
+
+## Sistema de score (0–100)
+
+Calculado sem IA, 100% por regras em `app/services/score_engine.py`:
+
+| Categoria | Peso | O que avalia |
+|---|---|---|
+| Segurança | 35% | Honeypot, contrato verificado, mint/freeze authority, holders concentrados |
+| Liquidez | 25% | Valor em USD disponível nos pools |
+| Volume | 15% | Volume 24h vs market cap, consistência entre janelas |
+| Tokenomics | 15% | Idade do token, número de holders |
+| Comunidade | 10% | Seguidores no Twitter, presença no Telegram/site |
+
+**Classificações:**
+
+| Score | Classificação |
+|---|---|
+| ≥ 85 | 🟢 Muito promissora |
+| ≥ 70 | 🟢 Promissora |
+| ≥ 50 | 🟡 Vale acompanhar |
+| ≥ 30 | 🟠 Alto risco |
+| < 30 | 🔴 Não recomendada |
+| Honeypot ou concentração extrema | ⚫ Possível golpe |
 
 ---
 
@@ -117,102 +134,68 @@ Ou abra a documentação interativa: `http://localhost:8000/docs`
 
 ```
 app/
-├── main.py                          # FastAPI app, rotas, rate limit
-├── config.py                        # Configurações (.env)
-├── logging_config.py                # Logs estruturados em JSON
+├── main.py                        # FastAPI app + background tasks
+├── config.py                      # Configurações (.env)
+├── logging_config.py              # Logs estruturados
 ├── models/
-│   └── schemas.py                   # Modelos Pydantic (contratos de dados)
-├── modules/
-│   └── whatsapp_webhook.py          # Recebe mensagens do WhatsApp
+│   └── schemas.py                 # Modelos Pydantic
 ├── services/
-│   ├── dexscreener_service.py       # Fonte: DEX Screener (mercado)
-│   ├── goplus_service.py            # Fonte: GoPlus Security (segurança/honeypot)
-│   ├── coingecko_service.py         # Fonte: CoinGecko (comunidade)
-│   ├── disponibilidade_service.py   # Onde comprar (DEXs + wallets)
-│   ├── score_engine.py              # ⭐ Lógica de pontuação (SEM IA)
-│   ├── recommendation_engine.py     # ⭐ Parecer e recomendação (SEM IA)
-│   ├── token_analyzer.py            # Orquestrador principal
-│   ├── response_formatter.py        # Formata texto pro WhatsApp
-│   └── whatsapp_service.py          # Envia mensagens (Evolution API)
+│   ├── monitor_service.py         # Loop de monitoramento (5 min)
+│   ├── telegram_service.py        # Envia notificações
+│   ├── token_analyzer.py          # Orquestrador principal
+│   ├── dexscreener_service.py     # Mercado (preço, liquidez, volume)
+│   ├── goplus_service.py          # Segurança (honeypot, rug pull)
+│   ├── coingecko_service.py       # Comunidade (redes sociais)
+│   ├── disponibilidade_service.py # Onde comprar (DEXs + wallets)
+│   ├── score_engine.py            # Lógica de pontuação
+│   ├── recommendation_engine.py   # Parecer e recomendação textual
+│   └── response_formatter.py      # Formata a mensagem final
 └── utils/
-    ├── http_client.py               # Cliente HTTP com retry automático
-    └── cache.py                     # Cache Redis (evita estourar limites grátis)
+    ├── http_client.py             # HTTP com retry automático
+    └── cache.py                   # Cache em memória com TTL
 tests/
-└── test_score_engine.py             # Testes unitários da lógica de score
+├── test_score_engine.py           # Testes unitários do score
+└── test_telegram.py               # Teste de envio no Telegram
 ```
 
 ---
 
-## APIs utilizadas (todas gratuitas)
+## Testando manualmente
 
-| Fonte | O que fornece | Limite gratuito | Precisa de chave? |
-|---|---|---|---|
-| [DEX Screener](https://docs.dexscreener.com/api/reference) | Liquidez, volume, preço, pools | Generoso, sem limite documentado para uso razoável | Não |
-| [GoPlus Security](https://docs.gopluslabs.io) | Honeypot, rug pull, mint/freeze authority, holders | Alto volume gratuito | Não |
-| [CoinGecko](https://docs.coingecko.com) | Comunidade, redes sociais | 10-30 req/min sem chave | Não (chave Demo opcional aumenta limite) |
-| [Trust Wallet Assets](https://github.com/trustwallet/assets) | Lista pública de tokens suportados | Ilimitado (é um repositório estático) | Não |
-| [Evolution API](https://doc.evolution-api.com) | Gateway WhatsApp | Self-hosted, sem limite | Não (é open-source) |
+Analisa um token pelo símbolo ou endereço de contrato sem esperar a varredura automática:
 
----
-
-## Ajustando o score (sem precisar mexer no resto do código)
-
-Toda a lógica de pontuação está isolada em **`app/services/score_engine.py`**. Os pesos de cada categoria estão centralizados:
-
-```python
-PESOS = {
-    "seguranca": 0.35,   # 35% da nota final
-    "liquidez": 0.25,    # 25%
-    "volume": 0.15,      # 15%
-    "comunidade": 0.10,  # 10%
-    "tokenomics": 0.15,  # 15%
-}
+```bash
+curl http://localhost:8000/analisar/PEPE
 ```
 
-Os textos do parecer estão em **`app/services/recommendation_engine.py`**, organizados por categoria (liquidez, volume, segurança, comunidade, idade).
-
----
-
-## Adicionando novas fontes de dados no futuro
-
-A arquitetura foi pensada para isso. Para adicionar uma nova fonte (ex: Birdeye, Helius):
-
-1. Crie `app/services/nova_fonte_service.py` seguindo o padrão dos existentes (uma função async que retorna um schema Pydantic)
-2. Adicione os campos relevantes em `app/models/schemas.py` se necessário
-3. Chame a nova função em `app/services/token_analyzer.py`, idealmente em paralelo com `asyncio.gather`
-4. Ajuste o `score_engine.py` se a nova fonte deve influenciar a pontuação
+Documentação interativa: `http://localhost:8000/docs`
 
 ---
 
 ## Rodando os testes
 
 ```bash
-pip install -r requirements.txt
 pip install pytest
-pytest tests/ -v
+pytest tests/test_score_engine.py -v
 ```
 
 ---
 
-## Rate Limiting
+## APIs utilizadas (todas gratuitas)
 
-O endpoint `/analisar/{query}` tem rate limit de 20 requisições/minuto por IP (configurável em `RATE_LIMIT_PER_MINUTE` no `.env`). O webhook do WhatsApp não tem rate limit próprio — ele já é naturalmente limitado pela velocidade de digitação humana, mas você pode adicionar se for expor para muitos usuários.
-
----
-
-## Limitações conhecidas
-
-- **Binance Alpha / Binance Web3 Wallet**: não possuem API pública, não são verificados automaticamente
-- **Coinbase Wallet / Phantom**: verificação de suporte é inferida via DEX (não há API oficial de lista de tokens)
-- **Exchanges centralizadas (Binance, OKX, etc)**: o campo `exchanges_centralizadas` fica vazio por padrão, pois confirmar listagem oficial exige fontes adicionais (ex: scraping ou CoinGecko com mapeamento de tickers) — pode ser expandido depois
-- **CoinGecko free tier**: sem chave, o limite é baixo (10-30 req/min); o cache Redis (TTL 10 min para comunidade) ajuda a mitigar isso
+| Fonte | O que fornece | Precisa de chave? |
+|---|---|---|
+| [DEX Screener](https://docs.dexscreener.com/api/reference) | Liquidez, volume, preço, boosted tokens | Não |
+| [GoPlus Security](https://docs.gopluslabs.io) | Honeypot, rug pull, holders, taxas | Não |
+| [CoinGecko](https://docs.coingecko.com) | Comunidade, redes sociais | Não (chave Demo opcional) |
+| [Trust Wallet Assets](https://github.com/trustwallet/assets) | Lista de tokens suportados | Não |
+| [Telegram Bot API](https://core.telegram.org/bots/api) | Envio de notificações | Sim (gratuito via @BotFather) |
 
 ---
 
-## Próximos passos sugeridos
+## Ajustando os filtros
 
-- [ ] Adicionar Birdeye API para reforçar dados de Solana
-- [ ] Adicionar verificação de liquidez travada via Team Finance/Unicrypt (EVM)
-- [ ] Persistir histórico de análises no PostgreSQL (tabelas já previstas na arquitetura, banco está rodando mas sem migrations ainda — adicionar com Alembic)
-- [ ] Adicionar endpoint de comparação entre tokens
-# analise-cripto
+Todos os filtros e pesos ficam em dois arquivos:
+
+- **`app/services/monitor_service.py`** — `MIN_SCORE`, `MIN_LIQUIDEZ_USD`, `MAX_TOKEN_AGE_MINUTES`
+- **`app/services/score_engine.py`** — pesos das categorias (`PESOS`)

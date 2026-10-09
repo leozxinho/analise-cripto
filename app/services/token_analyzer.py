@@ -21,6 +21,7 @@ from app.services import (
     disponibilidade_service,
     goplus_service,
 )
+from app.services.coingecko_service import calcular_score_comunidade
 from app.services.recommendation_engine import (
     determinar_nivel_risco,
     gerar_parecer,
@@ -72,6 +73,19 @@ async def analisar_token(query: str) -> AnaliseCompleta:
         _consultar_comunidade_seguro(contrato_real, mercado.rede),
         return_exceptions=False,
     )
+
+    # Se CoinGecko não indexou o token ainda, usa links sociais do DEX Screener
+    if not resultado_comunidade.twitter_url and (mercado.twitter_url or mercado.telegram_url or mercado.site_oficial):
+        resultado_comunidade = DadosComunidade(
+            twitter_url=mercado.twitter_url,
+            telegram_url=mercado.telegram_url,
+            site_oficial=mercado.site_oficial,
+            score_comunidade=calcular_score_comunidade(
+                seguidores=None,
+                tem_telegram=bool(mercado.telegram_url),
+                tem_site=bool(mercado.site_oficial),
+            ),
+        )
 
     # 3. Disponibilidade de compra (depende dos dados de mercado já obtidos)
     disponibilidade = await disponibilidade_service.verificar_disponibilidade(

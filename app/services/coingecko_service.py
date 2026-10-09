@@ -59,7 +59,7 @@ async def buscar_dados_comunidade(endereco_contrato: str, rede: str) -> DadosCom
 
     seguidores = community_data.get("twitter_followers")
 
-    score = _calcular_score_comunidade(
+    score = calcular_score_comunidade(
         seguidores=seguidores,
         tem_telegram=bool(telegram_handle),
         tem_site=bool(sites),
@@ -78,7 +78,7 @@ async def buscar_dados_comunidade(endereco_contrato: str, rede: str) -> DadosCom
     return resultado
 
 
-def _calcular_score_comunidade(
+def calcular_score_comunidade(
     seguidores: Optional[int], tem_telegram: bool, tem_site: bool
 ) -> float:
     """Heurística simples de 0-100 para força de comunidade, sem IA."""

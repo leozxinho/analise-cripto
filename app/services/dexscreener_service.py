@@ -112,6 +112,14 @@ def _parsear_melhor_par(pairs: list[dict]) -> Optional[DadosMercado]:
     price_change = melhor_par.get("priceChange", {}) or {}
     liquidity = melhor_par.get("liquidity", {}) or {}
 
+    info = melhor_par.get("info", {}) or {}
+    socials = info.get("socials", []) or []
+    websites = info.get("websites", []) or []
+
+    twitter_url = next((s.get("url") for s in socials if s.get("type") == "twitter"), None)
+    telegram_url = next((s.get("url") for s in socials if s.get("type") == "telegram"), None)
+    site_oficial = next((w.get("url") for w in websites if w.get("url")), None)
+
     return DadosMercado(
         preco_usd=_to_float(melhor_par.get("priceUsd")),
         market_cap=_to_float(melhor_par.get("marketCap")),
@@ -131,6 +139,9 @@ def _parsear_melhor_par(pairs: list[dict]) -> Optional[DadosMercado]:
         nome=melhor_par.get("baseToken", {}).get("name"),
         simbolo=melhor_par.get("baseToken", {}).get("symbol"),
         url_dexscreener=melhor_par.get("url"),
+        twitter_url=twitter_url,
+        telegram_url=telegram_url,
+        site_oficial=site_oficial,
     )
 
 
